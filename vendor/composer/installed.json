@@ -1,0 +1,45 @@
+[
+    {
+        "name": "cossou/jasperphp",
+        "version": "v1.1.0",
+        "version_normalized": "1.1.0.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/cossou/JasperPHP.git",
+            "reference": "762e90fb97f155bce4f87f3e5d931809fc4033d0"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/cossou/JasperPHP/zipball/762e90fb97f155bce4f87f3e5d931809fc4033d0",
+            "reference": "762e90fb97f155bce4f87f3e5d931809fc4033d0",
+            "shasum": ""
+        },
+        "time": "2015-02-05T14:22:13+00:00",
+        "type": "library",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-0": {
+                "JasperPHP": "src/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "authors": [
+            {
+                "name": "Hélder Duarte",
+                "email": "cossou@gmail.com"
+            }
+        ],
+        "description": "Create Reports in PHP with JasperReports",
+        "homepage": "https://github.com/cossou/JasperPHP",
+        "keywords": [
+            "jasper",
+            "jasperreports",
+            "java",
+            "pdf",
+            "reports"
+        ]
+    }
+]

@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="fact_detalle" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="682dedc5-ea5a-4be7-8c7c-2461fffd6618">
+	<property name="ireport.zoom" value="1.9487171000000014"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="tipo_comp_id" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="prefijo_comp" class="java.lang.Integer"/>
+	<parameter name="sufijo_comp" class="java.lang.Integer"/>
+	<parameter name="tipo_comp2_id" class="java.lang.Integer"/>
+	<parameter name="prefijo_comp2" class="java.lang.Integer"/>
+	<parameter name="sufijo_comp2" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[select linea1.*
+
+from
+(select * from t_facturacion_detalle
+where comp_tipo = $P{tipo_comp_id}
+	and comp_sucur = $P{prefijo_comp}
+	and comp_nro = $P{sufijo_comp}
+order by posicion) linea1
+
+order by subtotal, linea1.posicion]]>
+	</queryString>
+	<field name="comp_tipo" class="java.lang.Integer"/>
+	<field name="comp_letra" class="java.lang.String"/>
+	<field name="comp_sucur" class="java.lang.Integer"/>
+	<field name="comp_nro" class="java.lang.Integer"/>
+	<field name="concepto" class="java.lang.String"/>
+	<field name="posicion" class="java.lang.Integer"/>
+	<field name="subtotal" class="java.lang.Integer"/>
+	<field name="importe" class="java.lang.Float"/>
+	<variable name="sub_importe" class="java.math.BigDecimal" resetType="Group" resetGroup="sub" calculation="Sum">
+		<variableExpression><![CDATA[$F{importe}]]></variableExpression>
+		<initialValueExpression><![CDATA[0]]></initialValueExpression>
+	</variable>
+	<variable name="sub_cual" class="java.lang.String" resetType="Group" resetGroup="sub">
+		<variableExpression><![CDATA[$F{subtotal}]]></variableExpression>
+		<initialValueExpression><![CDATA[1]]></initialValueExpression>
+	</variable>
+	<variable name="total" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{importe}]]></variableExpression>
+	</variable>
+	<variable name="sub_importe2" class="java.math.BigDecimal" resetType="Group" resetGroup="sub" calculation="Sum">
+		<variableExpression><![CDATA[]]></variableExpression>
+		<initialValueExpression><![CDATA[0]]></initialValueExpression>
+	</variable>
+	<group name="subtotal">
+		<groupExpression><![CDATA[$F{subtotal}]]></groupExpression>
+	</group>
+	<group name="sub">
+		<groupExpression><![CDATA[$F{subtotal}]]></groupExpression>
+		<groupHeader>
+			<band/>
+		</groupHeader>
+		<groupFooter>
+			<band height="15">
+				<textField pattern="###0.00;-###0.00">
+					<reportElement x="218" y="1" width="45" height="14" uuid="5f2625e8-28ec-4840-bcbb-a96dcbd9e9e4"/>
+					<textElement textAlignment="Right">
+						<font fontName="DejaVu Sans Mono" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{sub_importe}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="10" y="1" width="208" height="14" uuid="6e3ce453-ab68-4b54-8d4e-155d07d59965"/>
+					<textElement>
+						<font fontName="DejaVu Sans Mono" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[( $V{sub_cual} == "1" ?
+    "* ENERGIA ELECTRICA" :
+    ( $V{sub_cual} == "5" ?
+        "* TELECOMUNICACIONES" :
+        ( $V{sub_cual} == "10" ?
+            "* SERVICIOS SOCIALES" :
+            ( $V{sub_cual} == "20" ?
+                "* CONCEPTOS VARIOS" :
+                "* IMPUESTOS Y TASAS")
+        )
+    )
+)]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="34" splitType="Stretch">
+			<staticText>
+				<reportElement x="10" y="0" width="249" height="20" uuid="0e3ebfb0-e97d-488c-a480-1dbf1cb115f0"/>
+				<textElement verticalAlignment="Middle">
+					<font size="12" isBold="false" isItalic="true"/>
+				</textElement>
+				<text><![CDATA[DETALLE DE SU COMPROBANTE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="10" y="20" width="100" height="14" uuid="34672e56-560c-4e35-8fdf-45b3bb838cd9"/>
+				<textElement>
+					<font isItalic="true"/>
+				</textElement>
+				<text><![CDATA[Concepto]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="218" y="20" width="45" height="14" uuid="96c7a755-eacc-485b-ad2e-673f635c6230"/>
+				<textElement textAlignment="Right">
+					<font isItalic="true"/>
+				</textElement>
+				<text><![CDATA[Monto]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="33" width="278" height="1" uuid="062aeaea-e7fb-4d39-862b-20326522977e"/>
+			</line>
+		</band>
+	</title>
+	<detail>
+		<band height="14" splitType="Stretch">
+			<elementGroup>
+				<textField>
+					<reportElement x="10" y="0" width="208" height="14" uuid="8cd10659-410e-49d6-8a5d-f20d32121e6c"/>
+					<textElement>
+						<font fontName="DejaVu Sans Mono"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{concepto}]]></textFieldExpression>
+				</textField>
+			</elementGroup>
+			<textField pattern="###0.00;-###0.00">
+				<reportElement x="218" y="0" width="45" height="14" uuid="58479181-e275-495b-b5ab-77d4e5b700ea"/>
+				<textElement textAlignment="Right">
+					<font fontName="DejaVu Sans Mono"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{importe}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band splitType="Stretch"/>
+	</pageFooter>
+	<summary>
+		<band splitType="Stretch"/>
+	</summary>
+</jasperReport>

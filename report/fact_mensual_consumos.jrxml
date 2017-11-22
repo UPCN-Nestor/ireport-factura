@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="fact_mensual_consumos" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="a5d3de60-02ab-4455-b112-32bfa2913374">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="socio_nro" class="java.lang.String"/>
+	<parameter name="suministro" class="java.lang.String"/>
+	<parameter name="ano" class="java.lang.String"/>
+	<parameter name="mes" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[select * from
+(select * from t_consumos
+where socio_nro = $P{socio_nro} and suministro = $P{suministro}
+	and (ano < $P{ano} or (ano = $P{ano} and mes <= $P{mes}))
+order by ano desc, mes desc
+limit 6) x
+
+union
+
+select * from t_consumos
+where socio_nro = $P{socio_nro} and suministro = $P{suministro}
+	and ano = $P{ano} - 1 and mes = $P{mes}
+
+order by ano desc, mes desc
+]]>
+	</queryString>
+	<field name="socio_nro" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="suministro" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ano" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="mes" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="valor" class="java.lang.Float">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<title>
+		<band height="171" splitType="Stretch">
+			<barChart>
+				<chart isShowLegend="false" evaluationTime="Report">
+					<reportElement stretchType="RelativeToBandHeight" x="0" y="0" width="252" height="122" uuid="a2edbcf8-b473-44b7-add5-3018f75546bf"/>
+					<chartTitle>
+						<font isItalic="true"/>
+						<titleExpression><![CDATA["GRÁFICO ESTADÍSTICA DE CONSUMO"]]></titleExpression>
+					</chartTitle>
+					<chartSubtitle/>
+					<chartLegend position="Top"/>
+				</chart>
+				<categoryDataset>
+					<categorySeries>
+						<seriesExpression><![CDATA["Consumo"]]></seriesExpression>
+						<categoryExpression><![CDATA[$F{mes}+"/"+$F{ano}]]></categoryExpression>
+						<valueExpression><![CDATA[$F{valor}]]></valueExpression>
+						<labelExpression><![CDATA["" + ((int)$F{valor})]]></labelExpression>
+					</categorySeries>
+				</categoryDataset>
+				<barPlot isShowLabels="true">
+					<plot orientation="Horizontal">
+						<seriesColor seriesOrder="0" color="#CCCCCC"/>
+					</plot>
+					<itemLabel color="#000000"/>
+					<categoryAxisFormat>
+						<axisFormat/>
+					</categoryAxisFormat>
+					<valueAxisFormat>
+						<axisFormat/>
+					</valueAxisFormat>
+				</barPlot>
+			</barChart>
+		</band>
+	</title>
+</jasperReport>
