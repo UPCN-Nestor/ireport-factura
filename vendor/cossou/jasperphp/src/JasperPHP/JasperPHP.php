@@ -129,7 +129,7 @@ class JasperPHP
 
         exec($this->the_command, $output, $return_var);
 		
-		//echo $this->the_command;
+		echo $this->the_command;
 		
         if($return_var != 0) 
             throw new \Exception("There was and error executing the report! Time to check the logs!", 1);
