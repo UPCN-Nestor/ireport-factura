@@ -23,7 +23,9 @@
 	CS.Comp_fecha,
 	CS.Comp_vto1, CS.Comp_impor,
 
-	0 AS Comp_recargo,
+	CASE WHEN DATEDIFF(day, CS.Comp_vto1, GETDATE()) > 0
+		THEN ISNULL(I.Recargo * DATEDIFF(day, CS.Comp_vto1, GETDATE()), 0)
+		ELSE 0 END AS Comp_recargo,
 	0 AS Comp_total,
 
 	CASE CS.Comp_tipo
@@ -47,7 +49,22 @@ From UPCCOMPROD.dbo.SOCIOS SO
 		AND SM.Soc_numero = SO.Soc_numero
 		AND SM.Sumi_numer = SU.Sumi_numer
 		AND SM.Sum6Fecbaj = '1753-01-01 00:00:00.000')
-
+	LEFT JOIN (
+		SELECT Form_codig, Fact_letra, Fact_sucur, Fact_numer, SUM(Importe * IntTasa / 100) * 1.21 Recargo
+		FROM (
+			SELECT Form_codig, Fact_letra, Fact_sucur, Fact_numer, TipoInteres, SUM(Fac2Impvt1) AS Importe
+			FROM (SELECT Form_codig, Fact_letra, Fact_sucur, Fact_numer, CASE WHEN Fac1Servic = 20 THEN 2 ELSE 1 END TipoInteres, Fac2Impvt1
+				FROM [UPCCOMPROD].[dbo].[FACTUI]
+				WHERE Fac2Item IN (SELECT IteCodigo FROM [UPCCOMPROD].[dbo].[ITEMS1] WHERE SerCodigo <> 20)
+					AND SucCodigo = 1 AND Soc_numero = $P{Socio}) D
+			GROUP BY Form_codig, Fact_letra, Fact_sucur, Fact_numer, TipoInteres
+		) ITEMS JOIN (
+			SELECT IntCodigo, IntTasa
+			FROM UPCCOMPROD.dbo.TIPIN2 T
+			WHERE IntFecha = (SELECT MAX(IntFecha) FROM UPCCOMPROD.dbo.TIPIN2 T2 WHERE T.IntCodigo = T2.IntCodigo)
+		) INTE ON (TipoInteres = IntCodigo)
+		GROUP BY Form_codig, Fact_letra, Fact_sucur, Fact_numer
+	) I ON (I.Form_codig = CS.Comp_tipo AND I.Fact_letra = CS.Comp_letra AND I.Fact_sucur = Comp_secci AND I.Fact_numer = CS.Comp_numer)
 Where SO.Soc_numero = $P{Socio}
 	AND SU.Sumi_numer = $P{Suministro}]]>
 	</queryString>
@@ -71,7 +88,7 @@ Where SO.Soc_numero = $P{Socio}
 	<field name="Comp_fecha" class="java.sql.Timestamp"/>
 	<field name="Comp_vto1" class="java.sql.Timestamp"/>
 	<field name="Comp_impor" class="java.math.BigDecimal"/>
-	<field name="Comp_recargo" class="java.lang.Integer"/>
+	<field name="Comp_recargo" class="java.math.BigDecimal"/>
 	<field name="Comp_total" class="java.lang.Integer"/>
 	<field name="Comp_tipo_text" class="java.lang.String"/>
 	<field name="Sum6Nromed" class="java.lang.String"/>
@@ -84,7 +101,7 @@ Where SO.Soc_numero = $P{Socio}
 		<variableExpression><![CDATA[$F{Comp_recargo}]]></variableExpression>
 	</variable>
 	<variable name="TotalSum" class="java.lang.Number" resetType="Group" resetGroup="vto" calculation="Sum">
-		<variableExpression><![CDATA[$F{Comp_total}]]></variableExpression>
+		<variableExpression><![CDATA[$F{Comp_impor} + $F{Comp_recargo}]]></variableExpression>
 	</variable>
 	<variable name="ImporteTotal" class="java.lang.Number" calculation="Sum">
 		<variableExpression><![CDATA[$F{Comp_impor}]]></variableExpression>
@@ -93,7 +110,7 @@ Where SO.Soc_numero = $P{Socio}
 		<variableExpression><![CDATA[$F{Comp_recargo}]]></variableExpression>
 	</variable>
 	<variable name="TotalTotal" class="java.lang.Number" calculation="Sum">
-		<variableExpression><![CDATA[$F{Comp_total}]]></variableExpression>
+		<variableExpression><![CDATA[$F{Comp_impor} + $F{Comp_recargo}]]></variableExpression>
 	</variable>
 	<group name="Seccion2"/>
 	<group name="vto" isReprintHeaderOnEachPage="true">
@@ -119,11 +136,25 @@ Where SO.Soc_numero = $P{Socio}
 					<textFieldExpression><![CDATA["Subtotal"]]></textFieldExpression>
 				</textField>
 				<textField pattern="###0.00;-###0.00">
-					<reportElement x="470" y="0" width="73" height="20" uuid="de27fa58-63e2-43ee-b9a1-c815a1766d53"/>
+					<reportElement x="350" y="0" width="73" height="20" uuid="de27fa58-63e2-43ee-b9a1-c815a1766d53"/>
 					<textElement textAlignment="Right">
 						<font fontName="DejaVu Sans Mono" size="11"/>
 					</textElement>
 					<textFieldExpression><![CDATA[($V{ImporteSum} == null ? 0 : $V{ImporteSum})]]></textFieldExpression>
+				</textField>
+				<textField pattern="###0.00;-###0.00">
+					<reportElement x="423" y="0" width="61" height="20" uuid="e0b123d9-4c01-449c-9482-9a737a2c425a"/>
+					<textElement textAlignment="Right">
+						<font fontName="DejaVu Sans Mono" size="11"/>
+					</textElement>
+					<textFieldExpression><![CDATA[($V{RecargoSum} == null ? 0 : $V{RecargoSum})]]></textFieldExpression>
+				</textField>
+				<textField pattern="###0.00;-###0.00">
+					<reportElement x="484" y="0" width="69" height="20" uuid="94bf37b7-b8a8-4e7e-a73a-e1a347bbcb3e"/>
+					<textElement textAlignment="Right">
+						<font fontName="DejaVu Sans Mono" size="11"/>
+					</textElement>
+					<textFieldExpression><![CDATA[($V{TotalSum} == null ? 0 : $V{TotalSum})]]></textFieldExpression>
 				</textField>
 			</band>
 		</groupFooter>
@@ -132,7 +163,7 @@ Where SO.Soc_numero = $P{Socio}
 		<band splitType="Stretch"/>
 	</background>
 	<title>
-		<band height="319" splitType="Stretch">
+		<band height="336" splitType="Stretch">
 			<image scaleImage="FillFrame">
 				<reportElement x="0" y="0" width="146" height="71" uuid="6a415978-482f-4248-9694-2cf85ce20902"/>
 				<imageExpression><![CDATA[$P{SUBREPORT_DIR} + "Header3.jpg"]]></imageExpression>
@@ -317,31 +348,31 @@ Where SO.Soc_numero = $P{Socio}
 				<textElement>
 					<font fontName="DejaVu Sans Mono" size="11" isBold="false"/>
 				</textElement>
-				<text><![CDATA[Deuda por suministro, según composición de saldos detallada a continuación]]></text>
+				<text><![CDATA[Deuda por suministro, según composición de saldos detallada a continuación:]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="32" y="298" width="85" height="20" uuid="6e54e64c-8e81-4f3e-81b8-a828ae4191e5"/>
+				<reportElement x="32" y="316" width="85" height="20" uuid="6e54e64c-8e81-4f3e-81b8-a828ae4191e5"/>
 				<textElement>
 					<font fontName="DejaVu Sans Mono" size="11" isBold="true"/>
 				</textElement>
 				<text><![CDATA[Comprobante]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="391" y="298" width="79" height="20" uuid="0161f9b9-16b4-4a84-9e56-c46223ab4243"/>
-				<textElement>
+				<reportElement x="271" y="316" width="79" height="20" uuid="0161f9b9-16b4-4a84-9e56-c46223ab4243"/>
+				<textElement textAlignment="Center">
 					<font fontName="DejaVu Sans Mono" size="11" isBold="true"/>
 				</textElement>
 				<text><![CDATA[Vencimiento]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="470" y="298" width="73" height="20" uuid="86a3360d-f618-465d-9218-d143ded435f8"/>
+				<reportElement x="350" y="316" width="73" height="20" uuid="86a3360d-f618-465d-9218-d143ded435f8"/>
 				<textElement textAlignment="Right">
 					<font fontName="DejaVu Sans Mono" size="11" isBold="true"/>
 				</textElement>
 				<text><![CDATA[Importe]]></text>
 			</staticText>
 			<line>
-				<reportElement x="32" y="317" width="511" height="1" uuid="1c856991-e74f-4f95-ad8a-1063d5a73b65"/>
+				<reportElement x="32" y="335" width="525" height="1" uuid="1c856991-e74f-4f95-ad8a-1063d5a73b65"/>
 			</line>
 			<textField>
 				<reportElement x="85" y="214" width="136" height="20" uuid="efc6a3ab-b3a0-4673-b295-f45cb764fc9b"/>
@@ -358,12 +389,26 @@ Where SO.Soc_numero = $P{Socio}
 				<textFieldExpression><![CDATA[($F{Sum6FecUlt} == "" ? "-" : $F{Sum6FecUlt})]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="312" y="298" width="79" height="20" uuid="1b032127-9b3a-4b58-aa39-5a53720b0aae"/>
-				<textElement>
+				<reportElement x="423" y="316" width="60" height="20" uuid="284640a3-90d5-4ff3-b48d-89f157c412bb"/>
+				<textElement textAlignment="Right">
 					<font fontName="DejaVu Sans Mono" size="11" isBold="true"/>
 				</textElement>
-				<text><![CDATA[Emisión]]></text>
+				<text><![CDATA[Recargo]]></text>
 			</staticText>
+			<staticText>
+				<reportElement x="483" y="316" width="73" height="20" uuid="c3f33905-c980-42a2-b913-9b3632c6d042"/>
+				<textElement textAlignment="Right">
+					<font fontName="DejaVu Sans Mono" size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="271" y="294" width="284" height="20" uuid="9dabe14b-96be-4bc4-82c2-f4411d9838ed"/>
+				<textElement textAlignment="Right">
+					<font fontName="DejaVu Sans Mono" size="11" isBold="false" isItalic="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Recargo calculado al " + new SimpleDateFormat("dd/MM/yyyy").format(new Date())]]></textFieldExpression>
+			</textField>
 		</band>
 	</title>
 	<columnHeader>
@@ -380,14 +425,14 @@ Where SO.Soc_numero = $P{Socio}
 				<textFieldExpression><![CDATA[$F{Comp_tipo}]]></textFieldExpression>
 			</textField>
 			<textField pattern="dd/MM/yy">
-				<reportElement x="391" y="0" width="79" height="20" uuid="24f2e3f7-6d9b-4555-a872-bdf147cb238d"/>
+				<reportElement x="271" y="0" width="79" height="20" uuid="24f2e3f7-6d9b-4555-a872-bdf147cb238d"/>
 				<textElement>
 					<font fontName="DejaVu Sans Mono" size="11"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{Comp_vto1}]]></textFieldExpression>
 			</textField>
 			<textField pattern="###0.00;-###0.00">
-				<reportElement x="470" y="0" width="73" height="20" uuid="fca2927c-48be-4187-9da2-478ffa58b618"/>
+				<reportElement x="350" y="0" width="73" height="20" uuid="fca2927c-48be-4187-9da2-478ffa58b618"/>
 				<textElement textAlignment="Right">
 					<font fontName="DejaVu Sans Mono" size="11"/>
 				</textElement>
@@ -421,19 +466,26 @@ Where SO.Soc_numero = $P{Socio}
 				</textElement>
 				<textFieldExpression><![CDATA[$F{Comp_numer}]]></textFieldExpression>
 			</textField>
-			<textField pattern="dd/MM/yy">
-				<reportElement x="312" y="0" width="79" height="20" uuid="dc740305-28d2-4d21-9eb1-1a5a0c939255"/>
-				<textElement>
+			<textField pattern="###0.00;-###0.00">
+				<reportElement x="423" y="0" width="61" height="20" uuid="dee35ded-195a-43e9-96af-0ea106a87353"/>
+				<textElement textAlignment="Right">
 					<font fontName="DejaVu Sans Mono" size="11"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$F{Comp_fecha}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{Comp_recargo}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00;-###0.00">
+				<reportElement x="484" y="0" width="69" height="20" uuid="cda9c763-2b2f-4813-9c08-899f1b79d30d"/>
+				<textElement textAlignment="Right">
+					<font fontName="DejaVu Sans Mono" size="11"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Comp_impor} + $F{Comp_recargo}]]></textFieldExpression>
 			</textField>
 		</band>
 	</detail>
 	<summary>
 		<band height="34" splitType="Stretch">
 			<line>
-				<reportElement x="32" y="0" width="511" height="1" uuid="854044f8-d636-4de6-b342-95486c3fac5b"/>
+				<reportElement x="32" y="0" width="525" height="1" uuid="854044f8-d636-4de6-b342-95486c3fac5b"/>
 			</line>
 			<textField>
 				<reportElement x="51" y="5" width="100" height="20" uuid="468d35a3-6966-4ba2-a65d-24a693458121"/>
@@ -443,11 +495,25 @@ Where SO.Soc_numero = $P{Socio}
 				<textFieldExpression><![CDATA["Total General"]]></textFieldExpression>
 			</textField>
 			<textField pattern="###0.00;-###0.00">
-				<reportElement x="470" y="5" width="73" height="20" uuid="f70b67e3-93f5-42af-85bb-30e6a8bd15ee"/>
+				<reportElement x="350" y="5" width="73" height="20" uuid="f70b67e3-93f5-42af-85bb-30e6a8bd15ee"/>
 				<textElement textAlignment="Right">
 					<font fontName="DejaVu Sans Mono" size="11"/>
 				</textElement>
 				<textFieldExpression><![CDATA[($V{ImporteTotal} == null ? 0 : $V{ImporteTotal})]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00;-###0.00">
+				<reportElement x="423" y="5" width="61" height="20" uuid="c393d299-7c48-4fca-b503-1b81372b35fd"/>
+				<textElement textAlignment="Right">
+					<font fontName="DejaVu Sans Mono" size="11"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($V{RecargoTotal} == null ? 0 : $V{RecargoTotal})]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00;-###0.00">
+				<reportElement x="483" y="5" width="70" height="20" uuid="754ea19b-b07d-4365-9b0e-cf4f662935b5"/>
+				<textElement textAlignment="Right">
+					<font fontName="DejaVu Sans Mono" size="11" isBold="true" isUnderline="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($V{TotalTotal} == null ? 0 : $V{TotalTotal})]]></textFieldExpression>
 			</textField>
 		</band>
 	</summary>
